@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bifrost Portal</title>
+<meta name="theme-color" content="#12141C">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Toolbox">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12141C;
+    --panel:#1B1F2B;
+    --panel-2:#232838;
+    --line:#2C3244;
+    --signal:#5EEAD4;
+    --amber:#FBBF6B;
+    --text:#E7E9EE;
+    --muted:#8B93A7;
+    --danger:#F27878;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;min-height:100vh;
+    overscroll-behavior-y:none;}
+  body{padding-bottom:96px;}
+
+  .topbar{
+    position:sticky;top:0;z-index:10;
+    background:linear-gradient(180deg, var(--ink) 70%, transparent);
+    padding:env(safe-area-inset-top,0) 18px 10px;
+    backdrop-filter:blur(6px);
+  }
+  .brand{
+    display:flex;align-items:baseline;justify-content:space-between;padding-top:18px;
+  }
+  .brand .mark{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--signal);
+    border:1px solid var(--signal);border-radius:5px;padding:2px 6px;letter-spacing:1px;
+  }
+  .brand .menu-btn{
+    background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;
+    padding:4px 8px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;font-size:26px;margin:8px 0 2px;
+    letter-spacing:-0.3px;
+  }
+  .sub{color:var(--muted);font-size:13px;margin-bottom:14px;}
+
+  .search{
+    display:flex;align-items:center;gap:8px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:10px 12px;
+  }
+  .search input{
+    background:transparent;border:none;outline:none;color:var(--text);
+    font-size:15px;width:100%;font-family:'Inter',sans-serif;
+  }
+  .search input::placeholder{color:var(--muted);}
+  .search svg{flex:none;opacity:.6;}
+
+  .chips{
+    display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;
+    scrollbar-width:none;
+  }
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:none;font-family:'JetBrains Mono',monospace;font-size:12px;
+    color:var(--muted);background:var(--panel);border:1px solid var(--line);
+    padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  }
+  .chip.active{color:var(--ink);background:var(--signal);border-color:var(--signal);font-weight:600;}
+
+  main{padding:6px 18px 18px;}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:10px;}
+  @media (min-width:700px), (orientation:landscape){
+    .grid{grid-template-columns:1fr 1fr;align-items:start;}
+  }
+
+  .card{
+    position:relative;display:flex;align-items:flex-start;gap:14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px;text-decoration:none;color:var(--text);
+    border-left:3px solid var(--cat-color, var(--signal));
+    transition:transform .12s ease, background .12s ease;
+  }
+  .card:active{transform:scale(0.98);background:var(--panel-2);}
+  .card .emoji{
+    flex:none;width:42px;height:42px;border-radius:10px;background:var(--panel-2);
+    display:flex;align-items:center;justify-content:center;font-size:20px;
+  }
+  .card .info{flex:1;min-width:0;}
+  .card .name{font-weight:600;font-size:15px;}
+  .card .desc{
+    color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:3px;
+  }
+  .card-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+  .card .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;color:var(--cat-color,var(--signal));letter-spacing:1px;
+    text-transform:uppercase;opacity:.8;pointer-events:none;white-space:nowrap;
+  }
+  .card .del{
+    position:relative;z-index:2;flex:none;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--danger);cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+    padding:7px 10px;border-radius:8px;letter-spacing:.5px;
+  }
+  .card .del:active{background:var(--danger);color:var(--ink);}
+
+  .empty{
+    text-align:center;color:var(--muted);padding:50px 20px;font-size:14px;
+  }
+
+  .fab{
+    position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0));
+    width:58px;height:58px;border-radius:50%;
+    background:var(--signal);color:var(--ink);border:none;
+    font-size:28px;font-weight:700;box-shadow:0 8px 24px rgba(94,234,212,.35);
+    display:flex;align-items:center;justify-content:center;z-index:20;cursor:pointer;
+  }
+  .fab:active{transform:scale(0.94);}
+
+  .sheet-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;
+    opacity:0;pointer-events:none;transition:opacity .18s ease;
+  }
+  .sheet-backdrop.open{opacity:1;pointer-events:auto;}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:31;
+    background:var(--panel);border-top:1px solid var(--line);
+    border-radius:20px 20px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0));
+    transform:translateY(100%);transition:transform .22s ease;
+    max-height:85vh;overflow-y:auto;
+  }
+  .sheet.open{transform:translateY(0);}
+  .sheet h2{font-family:'Space Grotesk',sans-serif;font-size:18px;margin:0 0 14px;}
+  .sheet p.desc{color:var(--muted);font-size:13px;margin:-8px 0 16px;line-height:1.5;}
+  .field{margin-bottom:12px;}
+  .field label{
+    display:block;font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;
+  }
+  .field input, .field select{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:10px;padding:11px 12px;color:var(--text);font-size:15px;
+    font-family:'Inter',sans-serif;outline:none;
+  }
+  .field input:focus, .field select:focus{border-color:var(--signal);}
+  .field .hint{color:var(--muted);font-size:11px;margin-top:5px;}
+  .row2{display:flex;gap:10px;}
+  .row2 .field{flex:1;}
+  .sheet-actions{display:flex;gap:10px;margin-top:16px;}
+  .btn{
+    flex:1;padding:13px;border-radius:12px;border:none;font-weight:600;
+    font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .btn.primary{background:var(--signal);color:var(--ink);}
+  .btn.ghost{background:var(--panel-2);color:var(--muted);}
+  .btn.danger{background:var(--danger);color:var(--ink);}
+  .btn:active{opacity:.85;}
+
+  .menu-item{
+    display:flex;align-items:center;gap:12px;width:100%;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--text);border-radius:12px;
+    padding:14px;font-size:14px;font-family:'Inter',sans-serif;margin-bottom:10px;
+    text-decoration:none;cursor:pointer;
+  }
+  .menu-item .ic{font-size:18px;flex:none;}
+  .menu-item.danger{color:var(--danger);}
+
+  .tool-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;margin-bottom:8px;
+  }
+  .tool-row .trow-info{min-width:0;}
+  .tool-row .trow-name{font-weight:600;font-size:14px;}
+  .tool-row .trow-cat{color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:2px;}
+  .tool-row .edit-btn{
+    flex:none;background:none;border:1px solid var(--signal);color:var(--signal);
+    border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .tool-row .edit-btn:active{background:var(--signal);color:var(--ink);}
+
+  .toast{
+    position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;
+    transition:all .2s ease;z-index:40;pointer-events:none;max-width:85vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .confirm-box{max-width:340px;margin:0 auto;}
+  .confirm-box .tool-name{color:var(--signal);font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="mark">ツBifrost Portal v1.5</span>
+    <button class="menu-btn" id="menuBtn">⚙️</button>
+  </div>
+  <h1>Tools Storage</h1>
+  <div class="sub">One shortcut, all your favorite websites.</div>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="searchInput" placeholder="Find tools..." />
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<button class="fab" id="addBtn">+</button>
+
+<!-- Add tool sheet -->
+<div class="sheet-backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet">
+  <h2>Add Tool</h2>
+  <div class="field">
+    <label>Name</label>
+    <input id="f-name" placeholder="e.g. SnapTik" />
+  </div>
+  <div class="field">
+    <label>URL</label>
+    <input id="f-url" placeholder="https://..." />
+  </div>
+  <div class="field">
+    <label>Description</label>
+    <input id="f-desc" placeholder="e.g. Download TikTok videos without watermark" />
+  </div>
+  <div class="row2">
+    <div class="field">
+      <label>Category</label>
+      <input id="f-cat" list="cat-options" placeholder="pick or type new" />
+      <datalist id="cat-options"></datalist>
+      <div class="hint">Pick an existing category, or type a new name to create one.</div>
+    </div>
+    <div class="field">
+      <label>Emoji</label>
+      <input id="f-emoji" placeholder="🔗" maxlength="4" />
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn ghost" id="cancelBtn">Cancel</button>
+    <button class="btn primary" id="saveBtn">Save</button>
+  </div>
+</div>
+
+<!-- Menu sheet -->
+<div class="sheet-backdrop" id="menuBackdrop"></div>
+<div class="sheet" id="menuSheet">
+  <h2>Menu</h2>
+  <button class="menu-item" id="resetBtn"><span class="ic">↺</span> Reset to Default</button>
+  <button class="menu-item" id="settingLinkBtn"><span class="ic">🛠️</span> Setting Link Tools</button>
+  <a class="menu-item" id="supportBtn" href="https://linktr.ee/hejioflow" target="_blank" rel="noopener"><span class="ic">☕</span> Support / Donate</a>
+  <a class="menu-item" id="igBtn" href="https://www.instagram.com/xldh._?igsi=MWhhdzhhZmU3M3d6Mw==" target="_blank" rel="noopener"><span class="ic">🚀</span> Contact me on Instagram</a>
+  <div class="sheet-actions">
+    <button class="btn ghost" id="menuCloseBtn">Close</button>
+  </div>
+</div>
+
+<!-- PIN sheet -->
+<div class="sheet-backdrop" id="pinBackdrop"></div>
+<div class="sheet" id="pinSheet">
+  <div class="confirm-box">
+    <h2>Enter PIN</h2>
+    <p class="desc">This area is locked. Enter the PIN to manage tool links.</p>
+    <div class="field">
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="••••" />
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="pinCancelBtn">Cancel</button>
+      <button class="btn primary" id="pinSubmitBtn">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- Setting Link Tools sheet -->
+<div class="sheet-backdrop" id="toolsListBackdrop"></div>
+<div class="sheet" id="toolsListSheet">
+  <h2>Setting Link Tools</h2>
+  <p class="desc">Tap any tool to edit its name, URL, description, category, or emoji.</p>
+  <div id="toolsListContainer"></div>
+  <div class="sheet-actions">
+    <button class="btn ghost" id="exportBtn">View Code</button>
+    <button class="btn primary" id="downloadBtn">Download File</button>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn ghost" id="toolsListCloseBtn">Close</button>
+  </div>
+</div>
+
+<!-- Export code sheet -->
+<div class="sheet-backdrop" id="exportBackdrop"></div>
+<div class="sheet" id="exportSheet">
+  <h2>Full Code</h2>
+  <p class="desc">This is your entire index.html with your current list baked in. Copy all of it, then on GitHub open index.html, select everything, delete it, and paste this in. Commit — this becomes the new default for everyone, including what Reset to Default restores.</p>
+  <div class="field">
+    <textarea id="exportOutput" readonly rows="10" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text);font-size:12px;font-family:'JetBrains Mono',monospace;resize:vertical;"></textarea>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn ghost" id="exportCloseBtn">Close</button>
+    <button class="btn primary" id="exportCopyBtn">Copy</button>
+  </div>
+</div>
+
+<!-- Reset confirm sheet -->
+<div class="sheet-backdrop" id="resetBackdrop"></div>
+<div class="sheet" id="resetSheet">
+  <div class="confirm-box">
+    <h2>Reset to Default?</h2>
+    <p class="desc">This will remove every tool you've added or edited yourself and bring back the original default list. This can't be undone.</p>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="resetNoBtn">Cancel</button>
+      <button class="btn danger" id="resetYesBtn">Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm sheet -->
+<div class="sheet-backdrop" id="deleteBackdrop"></div>
+<div class="sheet" id="deleteSheet">
+  <div class="confirm-box">
+    <h2>Delete this tool?</h2>
+    <p class="desc">Are you sure you want to remove <span class="tool-name" id="deleteToolName"></span> from your toolbox?</p>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="deleteNoBtn">No</button>
+      <button class="btn danger" id="deleteYesBtn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Snapshot of this page's original HTML, captured before any dynamic content
+// (grid, chips, etc.) gets rendered in. Used to build a downloadable/copyable
+// full index.html with the current tool list baked into DEFAULT_ITEMS.
+const ORIGINAL_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+const STORAGE_KEY = 'toolhub.items.v1';
+const SEEN_KEY = 'toolhub.seenDefaultIds.v1';
+const CAT_COLORS = ['#5EEAD4','#FBBF6B','#A78BFA','#F27878','#7DD3FC','#FCD34D'];
+const ALL_LABEL = 'All';
+
+// To add more tools later: just add new objects here with a NEW unique id
+// (never reuse an old id). Anyone who already opened the app will automatically
+// get newly-added entries merged in next time they open it, without losing
+// their own custom tools or re-adding tools they deleted on purpose.
+const DEFAULT_ITEMS = [
+  { id:'d1', name:'SnapTik', url:'https://snaptik.app', cat:'Downloader', emoji:'🎵', desc:'Download TikTok videos without watermark' },
+  { id:'d2', name:'SSSTik', url:'https://ssstik.io', cat:'Downloader', emoji:'📥', desc:'Download TikTok videos and audio' },
+  { id:'d3', name:'SaveFrom.net', url:'https://savefrom.net', cat:'Downloader', emoji:'💾', desc:'Download video and audio from many sites' },
+  { id:'d4', name:'Pinterest Video Downloader', url:'https://pinterestvideodownloader.com', cat:'Downloader', emoji:'📌', desc:'Save Pinterest videos and images' },
+  { id:'d5', name:'Y2mate', url:'https://y2mate.com', cat:'Downloader', emoji:'▶️', desc:'Download YouTube videos and audio' },
+  { id:'d6', name:'IG Downloader', url:'https://igram.world', cat:'Downloader', emoji:'📷', desc:'Save Instagram photos, videos, and reels' },
+];
+
+function loadSeenIds(){
+  try{ return JSON.parse(localStorage.getItem(SEEN_KEY)) || []; }catch(e){ return []; }
+}
+function saveSeenIds(ids){
+  localStorage.setItem(SEEN_KEY, JSON.stringify(ids));
+}
+
+function loadItems(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  let current;
+  if(raw){
+    try{ current = JSON.parse(raw); }catch(e){ current = null; }
+  }
+
+  if(!current){
+    // first time ever opening: seed with all defaults
+    saveItems(DEFAULT_ITEMS.slice());
+    saveSeenIds(DEFAULT_ITEMS.map(i=>i.id));
+    return DEFAULT_ITEMS.slice();
+  }
+
+  // auto-sync: add any brand-new default tools that this device hasn't seen yet,
+  // without touching anything the user already has, added, or deleted on purpose
+  const seen = loadSeenIds();
+  const currentIds = new Set(current.map(i=>i.id));
+  const newOnes = DEFAULT_ITEMS.filter(d => !seen.includes(d.id));
+  if(newOnes.length){
+    newOnes.forEach(d=>{
+      if(!currentIds.has(d.id)) current.push(d);
+    });
+    saveItems(current);
+  }
+  saveSeenIds([...new Set([...seen, ...DEFAULT_ITEMS.map(i=>i.id)])]);
+  return current;
+}
+
+function saveItems(items){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function resetToDefault(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ITEMS));
+  saveSeenIds(DEFAULT_ITEMS.map(i=>i.id));
+  items = DEFAULT_ITEMS.slice();
+  activeCat = ALL_LABEL;
+  query = '';
+  document.getElementById('searchInput').value = '';
+  render();
+}
+
+let items = loadItems();
+let activeCat = ALL_LABEL;
+let query = '';
+let pendingDeleteId = null;
+let editingId = null;
+
+function getCategories(){
+  return [...new Set(items.map(i=>i.cat))];
+}
+
+function catColor(cat){
+  const cats = getCategories();
+  const idx = cats.indexOf(cat);
+  return CAT_COLORS[idx % CAT_COLORS.length] || '#5EEAD4';
+}
+
+function renderChips(){
+  const cats = [ALL_LABEL, ...getCategories()];
+  const chipsEl = document.getElementById('chips');
+  chipsEl.innerHTML = '';
+  cats.forEach(cat=>{
+    const c = document.createElement('div');
+    c.className = 'chip' + (cat===activeCat ? ' active':'');
+    c.textContent = cat;
+    c.onclick = ()=>{ activeCat = cat; render(); };
+    chipsEl.appendChild(c);
+  });
+}
+
+function renderCategoryOptions(){
+  const dl = document.getElementById('cat-options');
+  dl.innerHTML = '';
+  getCategories().forEach(cat=>{
+    const opt = document.createElement('option');
+    opt.value = cat;
+    dl.appendChild(opt);
+  });
+}
+
+function render(){
+  renderChips();
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  let filtered = items.filter(i=>{
+    const matchCat = activeCat===ALL_LABEL || i.cat===activeCat;
+    const matchQuery = !query || i.name.toLowerCase().includes(query) || i.cat.toLowerCase().includes(query);
+    return matchCat && matchQuery;
+  });
+
+  if(filtered.length===0){
+    grid.innerHTML = '<div class="empty">There are no tools here yet.<br>Tap + to add.</div>';
+    return;
+  }
+
+  filtered.forEach(item=>{
+    const a = document.createElement('a');
+    a.className = 'card';
+    a.href = item.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.style.setProperty('--cat-color', catColor(item.cat));
+    let fallback = item.url;
+    try{ fallback = new URL(item.url).hostname.replace('www.',''); }catch(e){}
+    const descText = (item.desc && item.desc.trim()) ? item.desc : fallback;
+    a.innerHTML = `
+      <div class="emoji">${item.emoji || '🔗'}</div>
+      <div class="info">
+        <div class="name">${escapeHtml(item.name)}</div>
+        <div class="desc">${escapeHtml(descText)}</div>
+      </div>
+      <div class="card-side">
+        <span class="tag">${escapeHtml(item.cat)}</span>
+        <button class="del" data-id="${item.id}">Delete</button>
+      </div>
+    `;
+    a.querySelector('.del').onclick = (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      openDeleteConfirm(item.id, item.name);
+    };
+    grid.appendChild(a);
+  });
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  query = e.target.value.trim().toLowerCase();
+  render();
+});
+
+// --- Add / Edit tool sheet ---
+const sheet = document.getElementById('sheet');
+const backdrop = document.getElementById('backdrop');
+const sheetTitle = document.querySelector('#sheet h2');
+
+function openAddSheet(){
+  editingId = null;
+  sheetTitle.textContent = 'Add Tool';
+  ['f-name','f-url','f-desc','f-cat','f-emoji'].forEach(id=>document.getElementById(id).value='');
+  renderCategoryOptions();
+  sheet.classList.add('open'); backdrop.classList.add('open');
+}
+function openEditSheet(item){
+  editingId = item.id;
+  sheetTitle.textContent = 'Edit Tool';
+  document.getElementById('f-name').value = item.name || '';
+  document.getElementById('f-url').value = item.url || '';
+  document.getElementById('f-desc').value = item.desc || '';
+  document.getElementById('f-cat').value = item.cat || '';
+  document.getElementById('f-emoji').value = item.emoji || '';
+  renderCategoryOptions();
+  sheet.classList.add('open'); backdrop.classList.add('open');
+}
+function closeSheet(){
+  sheet.classList.remove('open'); backdrop.classList.remove('open');
+  editingId = null;
+}
+document.getElementById('addBtn').onclick = openAddSheet;
+document.getElementById('cancelBtn').onclick = closeSheet;
+backdrop.onclick = closeSheet;
+
+document.getElementById('saveBtn').onclick = ()=>{
+  const name = document.getElementById('f-name').value.trim();
+  let url = document.getElementById('f-url').value.trim();
+  const desc = document.getElementById('f-desc').value.trim();
+  const cat = document.getElementById('f-cat').value.trim() || 'Uncategorized';
+  const emoji = document.getElementById('f-emoji').value.trim() || '🔗';
+  if(!name || !url){ showToast('Name & URL are required'); return; }
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  if(editingId){
+    const idx = items.findIndex(i=>i.id===editingId);
+    if(idx>-1) items[idx] = { ...items[idx], name, url, desc, cat, emoji };
+    showToast('Updated');
+  }else{
+    items.push({ id:'i'+Date.now(), name, url, cat, emoji, desc });
+    showToast('Saved');
+  }
+  saveItems(items);
+  closeSheet();
+  activeCat = ALL_LABEL;
+  render();
+};
+
+// --- Menu sheet ---
+const menuSheet = document.getElementById('menuSheet');
+const menuBackdrop = document.getElementById('menuBackdrop');
+document.getElementById('menuBtn').onclick = ()=>{
+  menuSheet.classList.add('open'); menuBackdrop.classList.add('open');
+};
+function closeMenu(){
+  menuSheet.classList.remove('open'); menuBackdrop.classList.remove('open');
+}
+document.getElementById('menuCloseBtn').onclick = closeMenu;
+menuBackdrop.onclick = closeMenu;
+
+// --- PIN lock for Setting Link Tools ---
+// Change this PIN to whatever you want. Anyone who views the page source can
+// see it, so this is a casual lock (keeps friends from poking around by
+// accident), not real security.
+const SETTINGS_PIN = '1234';
+
+const pinSheet = document.getElementById('pinSheet');
+const pinBackdrop = document.getElementById('pinBackdrop');
+function closePinSheet(){
+  pinSheet.classList.remove('open'); pinBackdrop.classList.remove('open');
+}
+document.getElementById('pinCancelBtn').onclick = closePinSheet;
+pinBackdrop.onclick = closePinSheet;
+function submitPin(){
+  const val = document.getElementById('pinInput').value.trim();
+  if(val === SETTINGS_PIN){
+    closePinSheet();
+    renderToolsList();
+    toolsListSheet.classList.add('open'); toolsListBackdrop.classList.add('open');
+  }else{
+    showToast('Incorrect PIN');
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+document.getElementById('pinSubmitBtn').onclick = submitPin;
+document.getElementById('pinInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') submitPin();
+});
+
+// --- Setting Link Tools sheet ---
+const toolsListSheet = document.getElementById('toolsListSheet');
+const toolsListBackdrop = document.getElementById('toolsListBackdrop');
+function renderToolsList(){
+  const container = document.getElementById('toolsListContainer');
+  container.innerHTML = '';
+  if(items.length===0){
+    container.innerHTML = '<div class="empty">No tools yet.</div>';
+    return;
+  }
+  items.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'tool-row';
+    row.innerHTML = `
+      <div class="trow-info">
+        <div class="trow-name">${escapeHtml(item.emoji||'🔗')} ${escapeHtml(item.name)}</div>
+        <div class="trow-cat">${escapeHtml(item.cat)}</div>
+      </div>
+      <button class="edit-btn" data-id="${item.id}">Edit</button>
+    `;
+    row.querySelector('.edit-btn').onclick = ()=>{
+      closeToolsList();
+      openEditSheet(item);
+    };
+    container.appendChild(row);
+  });
+}
+document.getElementById('settingLinkBtn').onclick = ()=>{
+  closeMenu();
+  document.getElementById('pinInput').value = '';
+  pinSheet.classList.add('open'); pinBackdrop.classList.add('open');
+  setTimeout(()=>document.getElementById('pinInput').focus(), 250);
+};
+function closeToolsList(){
+  toolsListSheet.classList.remove('open'); toolsListBackdrop.classList.remove('open');
+}
+document.getElementById('toolsListCloseBtn').onclick = closeToolsList;
+toolsListBackdrop.onclick = closeToolsList;
+
+// --- Export current list as DEFAULT_ITEMS code ---
+const exportSheet = document.getElementById('exportSheet');
+const exportBackdrop = document.getElementById('exportBackdrop');
+function jsEscape(s){
+  return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+function generateDefaultItemsCode(){
+  const lines = items.map(i=>
+    `  { id:'${jsEscape(i.id)}', name:'${jsEscape(i.name)}', url:'${jsEscape(i.url)}', cat:'${jsEscape(i.cat)}', emoji:'${jsEscape(i.emoji)}', desc:'${jsEscape(i.desc||'')}' },`
+  );
+  return 'const DEFAULT_ITEMS = [\n' + lines.join('\n') + '\n];';
+}
+document.getElementById('exportBtn').onclick = ()=>{
+  const full = generateFullHtml();
+  if(!full){ showToast('Could not generate file'); return; }
+  document.getElementById('exportOutput').value = full;
+  exportSheet.classList.add('open'); exportBackdrop.classList.add('open');
+};
+function closeExportSheet(){
+  exportSheet.classList.remove('open'); exportBackdrop.classList.remove('open');
+}
+document.getElementById('exportCloseBtn').onclick = closeExportSheet;
+exportBackdrop.onclick = closeExportSheet;
+document.getElementById('exportCopyBtn').onclick = ()=>{
+  const ta = document.getElementById('exportOutput');
+  ta.select();
+  ta.setSelectionRange(0, 999999);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value)
+      .then(()=>showToast('Copied! Paste it on GitHub.'))
+      .catch(()=>showToast('Select and copy manually'));
+  }else{
+    try{ document.execCommand('copy'); showToast('Copied! Paste it on GitHub.'); }
+    catch(e){ showToast('Select and copy manually'); }
+  }
+};
+
+// --- Build the full updated index.html (current tool list baked in) ---
+function generateFullHtml(){
+  const regex = /const DEFAULT_ITEMS = \[[\s\S]*?\];/;
+  if(!regex.test(ORIGINAL_HTML)) return null;
+  return ORIGINAL_HTML.replace(regex, generateDefaultItemsCode());
+}
+
+// --- Download a ready-to-upload index.html with the current list baked in ---
+document.getElementById('downloadBtn').onclick = ()=>{
+  const full = generateFullHtml();
+  if(!full){ showToast('Could not generate file, try View Code instead'); return; }
+  const blob = new Blob([full], { type:'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'index.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Downloaded! Upload it to GitHub to replace index.html.');
+};
+
+// --- Reset confirm sheet ---
+const resetSheet = document.getElementById('resetSheet');
+const resetBackdrop = document.getElementById('resetBackdrop');
+document.getElementById('resetBtn').onclick = ()=>{
+  closeMenu();
+  resetSheet.classList.add('open'); resetBackdrop.classList.add('open');
+};
+function closeResetConfirm(){
+  resetSheet.classList.remove('open'); resetBackdrop.classList.remove('open');
+}
+document.getElementById('resetNoBtn').onclick = closeResetConfirm;
+resetBackdrop.onclick = closeResetConfirm;
+document.getElementById('resetYesBtn').onclick = ()=>{
+  resetToDefault();
+  closeResetConfirm();
+  showToast('Reset to default');
+};
+
+// --- Delete confirm sheet ---
+const deleteSheet = document.getElementById('deleteSheet');
+const deleteBackdrop = document.getElementById('deleteBackdrop');
+function openDeleteConfirm(id, name){
+  pendingDeleteId = id;
+  document.getElementById('deleteToolName').textContent = name;
+  deleteSheet.classList.add('open'); deleteBackdrop.classList.add('open');
+}
+function closeDeleteConfirm(){
+  pendingDeleteId = null;
+  deleteSheet.classList.remove('open'); deleteBackdrop.classList.remove('open');
+}
+document.getElementById('deleteNoBtn').onclick = closeDeleteConfirm;
+deleteBackdrop.onclick = closeDeleteConfirm;
+document.getElementById('deleteYesBtn').onclick = ()=>{
+  if(pendingDeleteId){
+    items = items.filter(i=>i.id!==pendingDeleteId);
+    saveItems(items);
+    if(activeCat!==ALL_LABEL && !items.some(i=>i.cat===activeCat)) activeCat = ALL_LABEL;
+  }
+  closeDeleteConfirm();
+  render();
+  showToast('Deleted');
+};
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+render();
+</script>
+</body>
+</html>
